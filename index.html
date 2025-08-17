@@ -127,6 +127,34 @@
   .btn.brand { background: var(--brand); color: #fff; border-color: var(--brand); }
   .small { font-size: 12px; }
 
+  /* --- Download button container --- */
+  .download-wrap { text-align:center; margin: 20px 0 60px; }
+  .no-print { display: inline-block; }
+
+  /* ===== Print styles (for crisp PDF) ===== */
+  @media print {
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: #ffffff !important;
+    }
+    .stars-wrap { display: none !important; }  /* hide animation on PDF */
+    header h1, header .tagline {
+      color: #000 !important;
+      text-shadow: none !important;
+    }
+    .card {
+      background: #ffffff !important;
+      border: 1px solid #cccccc !important;
+      box-shadow: none !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .summary-pill { background:#f2f6ff !important; border-color:#dbe6ff !important; color:#0b1f4e !important; }
+    .download-wrap, .no-print { display: none !important; } /* hide the button */
+    table { min-width: auto !important; }
+  }
+
   @media (max-width: 640px) {
     h1 { font-size: 22px; }
     .controls { gap: 12px; }
@@ -142,7 +170,7 @@
     <canvas id="starsFront"></canvas>
   </div>
 
-  <div class="page">
+  <div class="page" id="pageRoot">
     <header>
       <h1>Let's Go Dutch</h1>
       <div class="tagline"><em>Split Expenses. Knit Memories</em></div>
@@ -204,6 +232,11 @@
           <div id="noSettlements" class="muted">No settlements yet. Start entering amounts.</div>
         </div>
       </section>
+
+      <!-- NEW: Download PDF button -->
+      <div class="download-wrap">
+        <button id="downloadPdfBtn" class="btn brand no-print" type="button" title="Download this page as PDF">Download PDF</button>
+      </div>
     </main>
   </div>
 
@@ -230,7 +263,6 @@
     nameInput.placeholder = 'Name';
     nameInput.value = name;
     nameInput.autocomplete = 'name';
-    nameInput.addEventListener('input', () => { /* names don't affect math */ });
     tdName.appendChild(nameInput);
 
     const tdPaid = document.createElement('td');
@@ -359,10 +391,9 @@
   setRowCount(travellersInput.value || 3);
   recalc();
 
-  /* ===== Animated Starfield (Canvas) =====
-     Lightweight, battery-friendly. Two layers for parallax. */
+  /* ===== Animated Starfield (Canvas) ===== */
   (function(){
-    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); // cap DPR to keep it efficient
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); // cap DPR
 
     function makeLayer(canvas, count, speedMin, speedMax, sizeMin, sizeMax, alphaMin, alphaMax){
       const ctx = canvas.getContext('2d');
@@ -383,8 +414,7 @@
             r: rand(sizeMin, sizeMax)*DPR,
             a: rand(alphaMin, alphaMax),
             v: rand(speedMin, speedMax)*DPR,
-            tw: rand(0.002, 0.006) * (Math.random()<0.5?-1:1),
-            ta: rand(alphaMin, alphaMax)
+            tw: rand(0.002, 0.006) * (Math.random()<0.5?-1:1)
           });
         }
       }
@@ -396,7 +426,6 @@
         for (const s of stars){
           s.y += s.v;
           if (s.y - s.r > canvas.height) s.y = -s.r;
-          // subtle twinkle
           s.a += s.tw;
           if (s.a > alphaMax || s.a < alphaMin) s.tw *= -1;
           ctx.globalAlpha = Math.max(alphaMin, Math.min(alphaMax, s.a));
@@ -413,9 +442,14 @@
       step();
     }
 
-    makeLayer(document.getElementById('starsBack'), 120, 0.05, 0.12, 0.35, 0.8, 0.15, 0.35); // slower, smaller
-    makeLayer(document.getElementById('starsFront'), 60, 0.10, 0.25, 0.6, 1.2, 0.25, 0.55);  // faster, brighter
+    makeLayer(document.getElementById('starsBack'), 120, 0.05, 0.12, 0.35, 0.8, 0.15, 0.35);
+    makeLayer(document.getElementById('starsFront'), 60, 0.10, 0.25, 0.6, 1.2, 0.25, 0.55);
   })();
+
+  /* ===== Download PDF: uses native print to Save as PDF ===== */
+  document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+    window.print();
+  });
 </script>
 </body>
 </html>
