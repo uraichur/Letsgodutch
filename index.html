@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Let Go Dutch — Split Expenses</title>
+<style>
+  /* ===== Colors from the attached theme ===== */
+  :root{
+    --brand:#0b6cff;
+    --text:#1b1b1b;
+    --muted:#3a3a3a;
+    --line:#d9d9d9;
+    --bg1:#0b1f4e;
+    --bg2:#051234;
+    --bg3:#000a1e;
+    --cardA:rgba(255,255,255,0.72);
+    --cardB:rgba(255,255,255,0.60);
+    --radius: 18px;
+    --gap: 10px;
+  }
+
+  /* ===== Base ===== */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    font-family: Cambria, Georgia, "Times New Roman", Times, serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 800px at 20% 25%, #12306e, transparent 60%),
+      radial-gradient(900px 700px at 80% 10%, #0e2a63, transparent 55%),
+      radial-gradient(800px 800px at 60% 90%, #0a2457, transparent 55%),
+      linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 60%, var(--bg3) 100%);
+  }
+
+  header {
+    padding: 24px 16px 10px;
+    text-align: center;
+    color: #0b1f4e;
+    text-shadow: 0 1px 0 rgba(255,255,255,.55);
+  }
+  h1 { margin: 0; font-size: clamp(22px, 5vw, 28px); letter-spacing: .2px; }
+  .tagline { margin: 6px 0 18px; color: #2a2a2a; font-size: clamp(14px, 3.6vw, 16px); font-style: italic; }
+
+  main { max-width: 980px; margin: 0 auto 40px; padding: 0 16px; }
+
+  /* Frosted cards */
+  .card {
+    background: linear-gradient(165deg, var(--cardA), var(--cardB));
+    border: 1px solid rgba(255,255,255,0.30);
+    backdrop-filter: blur(12px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+    border-radius: var(--radius);
+    box-shadow: 0 18px 60px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.45) inset;
+    padding: 16px;
+    margin: 18px 0;
+  }
+
+  .controls { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin-bottom: 14px; }
+  .controls label { font-weight: 700; color:#0b1f4e; }
+  .controls input[type="number"] {
+    width: 140px; padding: 10px;
+    border: 1px solid var(--line); border-radius: 12px;
+    font-size: 16px; background: #fff;
+    font-family: Cambria, Georgia, "Times New Roman", Times, serif;
+  }
+  .summary-pill {
+    display: inline-block; padding: 6px 10px; border-radius: 999px;
+    background: #eef4ff; border: 1px solid #cfe0ff;
+    font-variant-numeric: tabular-nums; color:#0b1f4e;
+  }
+  .spacer { flex: 1 1 auto; }
+
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; min-width: 560px; background: transparent; }
+  th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: #26304d; }
+  tbody tr:last-child td { border-bottom: none; }
+  input[type="text"], input[type="number"].money {
+    width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 12px;
+    font-size: 16px; background: #fff; font-family: Cambria, Georgia, "Times New Roman", Times, serif;
+  }
+
+  .right { text-align: right; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .neg { color: #b00020; font-variant-numeric: tabular-nums; }
+  .pos { color: #0a7a29; font-variant-numeric: tabular-nums; }
+  .mono { font-variant-numeric: tabular-nums; font-family: Cambria, Georgia, "Times New Roman", Times, serif; }
+  .row-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line);
+    background: #fff; cursor: pointer; font-size: 15px;
+    box-shadow: 0 6px 18px rgba(11,108,255,0.15);
+  }
+  .btn:hover { background: #f5f7ff; border-color:#cfe0ff; }
+  .btn.brand { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .small { font-size: 12px; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 20px; }
+    .controls { gap: 12px; }
+    .controls input[type="number"] { width: 130px; }
+    th.hide-sm, td.hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Let's Go Dutch</h1>
+    <div class="tagline"><em>Split Expenses. Knit Memories</em></div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="controls">
+        <label for="travellers">Total travellers:</label>
+        <input id="travellers" type="number" min="1" step="1" value="3" inputmode="numeric" />
+        <span class="spacer"></span>
+        <span id="summary" class="summary-pill mono"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table id="peopleTable" aria-label="People and expenses">
+          <thead>
+            <tr>
+              <th style="width:34%">Name</th>
+              <th style="width:22%" class="right">Expenses Paid</th>
+              <th style="width:22%" class="right">Balance</th>
+              <th class="hide-sm" style="width:22%">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td class="right"><strong>Totals</strong></td>
+              <td class="right mono" id="totalPaid">0.00</td>
+              <td class="right mono" id="totalBalance">0.00</td>
+              <td class="hide-sm"></td>
+            </tr>
+          </tfoot>
+        </table>
+        <div class="small muted" style="margin-top:8px">Rows adjust automatically when you change the traveller count. Balances update as you type.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 style="margin: 0 0 10px; color:#0b1f4e;">Who should pay whom</h3>
+      <div id="settlementsWrap">
+        <div class="table-wrap">
+          <table id="settlementsTable" aria-label="Settlement transfers" style="display:none; min-width:420px;">
+            <thead>
+              <tr>
+                <th style="width:40%">From</th>
+                <th style="width:40%">To</th>
+                <th class="right" style="width:20%">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="settlementsBody"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="right mono" id="settlementCheck"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div id="noSettlements" class="muted">No settlements yet. Start entering amounts.</div>
+      </div>
+    </section>
+  </main>
+
+<script>
+  // --- Utilities
+  const fmt = (n) => (isNaN(n) ? "0.00" : Number(n).toFixed(2));
+  const money = (n) => fmt(n);
+
+  // --- DOM elements
+  const tbody = document.getElementById('tbody');
+  const totalPaidEl = document.getElementById('totalPaid');
+  const totalBalanceEl = document.getElementById('totalBalance');
+  const settlementsTable = document.getElementById('settlementsTable');
+  const settlementsBody = document.getElementById('settlementsBody');
+  const noSettlements = document.getElementById('noSettlements');
+  const summary = document.getElementById('summary');
+  const travellersInput = document.getElementById('travellers');
+
+  // --- Row management
+  function addRow(name = "", paid = "") {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Name';
+    nameInput.value = name;
+    nameInput.autocomplete = 'name';
+    tdName.appendChild(nameInput);
+
+    const tdPaid = document.createElement('td');
+    tdPaid.className = 'right';
+    const paidInput = document.createElement('input');
+    paidInput.className = 'money';
+    paidInput.type = 'number';
+    paidInput.step = '0.01';
+    paidInput.min = '0';
+    paidInput.placeholder = '0.00';
+    paidInput.inputMode = 'decimal';
+    paidInput.value = paid;
+    paidInput.addEventListener('input', recalcLive, { passive: true });
+    tdPaid.appendChild(paidInput);
+
+    const tdBalance = document.createElement('td');
+    tdBalance.className = 'right mono';
+    tdBalance.textContent = '0.00';
+
+    const tdActions = document.createElement('td');
+    tdActions.className = 'hide-sm';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn';
+    delBtn.type = 'button';
+    delBtn.textContent = 'Remove';
+    delBtn.addEventListener('click', () => {
+      tr.remove();
+      travellersInput.value = Math.max(1, tbody.children.length);
+      recalcLive();
+    });
+    tdActions.appendChild(delBtn);
+
+    tr.appendChild(tdName);
+    tr.appendChild(tdPaid);
+    tr.appendChild(tdBalance);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  }
+
+  function setRowCount(n) {
+    n = Math.max(1, Math.floor(Number(n) || 0));
+    while (tbody.children.length < n) addRow();
+    while (tbody.children.length > n) tbody.lastElementChild.remove();
+    recalcLive();
+  }
+
+  // --- Calculations
+  function getData() {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    return rows.map((tr, idx) => {
+      const name = tr.querySelector('input[type="text"]').value.trim() || `Person ${idx+1}`;
+      const paid = parseFloat(tr.querySelector('input.money').value);
+      return { idx, name, paid: isNaN(paid) ? 0 : paid, balance: 0 };
+    });
+  }
+
+  function recalc() {
+    const people = getData();
+    const n = people.length || 1;
+    const totalPaid = people.reduce((s, p) => s + p.paid, 0);
+    const perHead = totalPaid / n;
+
+    people.forEach(p => p.balance = +(perHead - p.paid).toFixed(2));
+
+    people.forEach((p, i) => {
+      const row = tbody.children[i];
+      const balCell = row.children[2]; // Balance column position
+      balCell.textContent = money(p.balance);
+      balCell.classList.toggle('pos', p.balance > 0);
+      balCell.classList.toggle('neg', p.balance < 0);
+    });
+
+    totalPaidEl.textContent = money(totalPaid);
+    const totalBalance = people.reduce((s, p) => s + p.balance, 0);
+    totalBalanceEl.textContent = money(totalBalance);
+    summary.textContent = `Total: ₹${money(totalPaid)} • Per person: ₹${money(perHead)}`;
+
+    const transfers = computeSettlements(people);
+    renderSettlements(transfers);
+
+    const checkSum = transfers.reduce((s,t)=>s+t.amount,0);
+    const owesSum = people.filter(p=>p.balance>0).reduce((s,p)=>s+p.balance,0);
+    const recSum  = -people.filter(p=>p.balance<0).reduce((s,p)=>s+p.balance,0);
+    document.getElementById('settlementCheck').textContent =
+      `Check: pays total ₹${money(owesSum)} ≈ receives total ₹${money(recSum)} • transfers sum ₹${money(checkSum)}`;
+  }
+
+  function computeSettlements(people) {
+    const debtors = people.filter(p => p.balance > 0).map(p => ({ name: p.name, amt: +p.balance.toFixed(2) }));
+    const creditors = people.filter(p => p.balance < 0).map(p => ({ name: p.name, amt: +(-p.balance).toFixed(2) }));
+    const transfers = [];
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+      const pay = Math.min(debtors[i].amt, creditors[j].amt);
+      if (pay > 0) transfers.push({ from: debtors[i].name, to: creditors[j].name, amount: +pay.toFixed(2) });
+      debtors[i].amt = +(debtors[i].amt - pay).toFixed(2);
+      creditors[j].amt = +(creditors[j].amt - pay).toFixed(2);
+      if (debtors[i].amt <= 0) i++;
+      if (creditors[j].amt <= 0) j++;
+    }
+    return transfers;
+  }
+
+  function renderSettlements(transfers) {
+    settlementsBody.innerHTML = '';
+    if (!transfers.length) {
+      settlementsTable.style.display = 'none';
+      noSettlements.style.display = 'block';
+      return;
+    }
+    transfers.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${t.from}</td><td>${t.to}</td><td class="right mono">${money(t.amount)}</td>`;
+      settlementsBody.appendChild(tr);
+    });
+    noSettlements.style.display = 'none';
+    settlementsTable.style.display = 'table';
+  }
+
+  function recalcLive() { recalc(); }
+
+  // Traveller count → rows + recalc
+  travellersInput.addEventListener('input', () => setRowCount(travellersInput.value), { passive: true });
+  travellersInput.addEventListener('change', () => setRowCount(travellersInput.value));
+
+  // Init
+  setRowCount(travellersInput.value || 3);
+  recalc();
+</script>
+</body>
+</html>
