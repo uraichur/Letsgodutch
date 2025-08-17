@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Let Go Dutch — Split Expenses</title>
+<title>Let Go Dutch — Split Expenses.Knit Memories</title>
 <style>
   /* ===== Theme ===== */
   :root{
@@ -89,12 +89,17 @@
 
   .controls { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin-bottom: 14px; }
   .controls label { font-weight: 700; color:#0b1f4e; }
+
+  /* CHANGED: narrow slot sized for up to 3 digits, with a hard limit of 999 in HTML */
   .controls input[type="number"] {
-    width: 140px; padding: 10px;
+    width: 6.5ch; /* ~3 digits plus padding/arrows */
+    padding: 10px;
     border: 1px solid var(--line); border-radius: 12px;
     font-size: 16px; background: #fff;
     font-family: Cambria, Georgia, "Times New Roman", Times, serif;
+    text-align: right;
   }
+
   .summary-pill {
     display: inline-block; padding: 6px 10px; border-radius: 999px;
     background: #eef4ff; border: 1px solid #cfe0ff;
@@ -158,7 +163,7 @@
   @media (max-width: 640px) {
     h1 { font-size: 22px; }
     .controls { gap: 12px; }
-    .controls input[type="number"] { width: 130px; }
+    .controls input[type="number"] { width: 6.5ch; } /* keep the compact 3-digit slot on mobile too */
     th.hide-sm, td.hide-sm { display: none; }
   }
 </style>
@@ -179,8 +184,9 @@
     <main>
       <section class="card">
         <div class="controls">
-          <label for="travellers">Total travellers:</label>
-          <input id="travellers" type="number" min="1" step="1" value="3" inputmode="numeric" />
+          <label for="travellers">Participants:</label>
+          <!-- CHANGED: limit to 3 digits -->
+          <input id="travellers" type="number" min="1" max="999" step="1" value="3" inputmode="numeric" />
           <span class="spacer"></span>
           <span id="summary" class="summary-pill mono"></span>
         </div>
@@ -233,7 +239,7 @@
         </div>
       </section>
 
-      <!-- NEW: Download PDF button -->
+      <!-- Download PDF button -->
       <div class="download-wrap">
         <button id="downloadPdfBtn" class="btn brand no-print" type="button" title="Download this page as PDF">Download PDF</button>
       </div>
@@ -241,7 +247,7 @@
   </div>
 
 <script>
-  /* ===== Logic (unchanged except auto-calc hooks) ===== */
+  /* ===== Logic (unchanged except requested wording) ===== */
   const fmt = (n) => (isNaN(n) ? "0.00" : Number(n).toFixed(2));
   const money = (n) => fmt(n);
 
@@ -338,7 +344,9 @@
     totalPaidEl.textContent = money(totalPaid);
     const totalBalance = people.reduce((s, p) => s + p.balance, 0);
     totalBalanceEl.textContent = money(totalBalance);
-    summary.textContent = `Total: ₹${money(totalPaid)} • Per person: ₹${money(perHead)}`;
+
+    /* CHANGED: label wording */
+    summary.textContent = `Total: ₹${money(totalPaid)} • Pax: ₹${money(perHead)}`;
 
     const transfers = computeSettlements(people);
     renderSettlements(transfers);
