@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Let Go Dutch — Split Expenses</title>
 <style>
-  /* ===== Colors from the attached theme ===== */
+  /* ===== Theme ===== */
   :root{
     --brand:#0b6cff;
     --text:#1b1b1b;
-    --muted:#3a3a3a;
+    --muted:#d9ddff;
     --line:#d9d9d9;
     --bg1:#0b1f4e;
     --bg2:#051234;
@@ -20,7 +20,7 @@
     --gap: 10px;
   }
 
-  /* ===== Base ===== */
+  /* Base */
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -32,18 +32,48 @@
       radial-gradient(900px 700px at 80% 10%, #0e2a63, transparent 55%),
       radial-gradient(800px 800px at 60% 90%, #0a2457, transparent 55%),
       linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 60%, var(--bg3) 100%);
+    overflow-x: hidden;
   }
+
+  /* Starfield canvases (behind everything) */
+  .stars-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .stars-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Content sits above starfield */
+  .page { position: relative; z-index: 1; }
 
   header {
-    padding: 24px 16px 10px;
+    padding: 28px 16px 14px;
     text-align: center;
-    color: #0b1f4e;
-    text-shadow: 0 1px 0 rgba(255,255,255,.55);
   }
-  h1 { margin: 0; font-size: clamp(22px, 5vw, 28px); letter-spacing: .2px; }
-  .tagline { margin: 6px 0 18px; color: #2a2a2a; font-size: clamp(14px, 3.6vw, 16px); font-style: italic; }
+  h1 {
+    margin: 0;
+    font-size: clamp(24px, 5vw, 32px);
+    letter-spacing: .2px;
+    color: #ffffff;
+    text-shadow: 0 2px 10px rgba(0,0,0,.5), 0 0 22px rgba(180,210,255,.45);
+  }
+  .tagline {
+    margin: 8px 0 18px;
+    color: #ffffff;
+    opacity: .95;
+    font-size: clamp(14px, 3.6vw, 17px);
+    font-style: italic;
+    text-shadow: 0 1px 6px rgba(0,0,0,.55), 0 0 12px rgba(160,190,255,.35);
+  }
 
-  main { max-width: 980px; margin: 0 auto 40px; padding: 0 16px; }
+  main { max-width: 980px; margin: 0 auto 44px; padding: 0 16px; }
 
   /* Frosted cards */
   .card {
@@ -98,7 +128,7 @@
   .small { font-size: 12px; }
 
   @media (max-width: 640px) {
-    h1 { font-size: 20px; }
+    h1 { font-size: 22px; }
     .controls { gap: 12px; }
     .controls input[type="number"] { width: 130px; }
     th.hide-sm, td.hide-sm { display: none; }
@@ -106,75 +136,82 @@
 </style>
 </head>
 <body>
-  <header>
-    <h1>Let's Go Dutch</h1>
-    <div class="tagline"><em>Split Expenses. Knit Memories</em></div>
-  </header>
+  <!-- Animated starfield (two layers for subtle parallax) -->
+  <div class="stars-wrap" aria-hidden="true">
+    <canvas id="starsBack"></canvas>
+    <canvas id="starsFront"></canvas>
+  </div>
 
-  <main>
-    <section class="card">
-      <div class="controls">
-        <label for="travellers">Total travellers:</label>
-        <input id="travellers" type="number" min="1" step="1" value="3" inputmode="numeric" />
-        <span class="spacer"></span>
-        <span id="summary" class="summary-pill mono"></span>
-      </div>
+  <div class="page">
+    <header>
+      <h1>Let's Go Dutch</h1>
+      <div class="tagline"><em>Split Expenses. Knit Memories</em></div>
+    </header>
 
-      <div class="table-wrap">
-        <table id="peopleTable" aria-label="People and expenses">
-          <thead>
-            <tr>
-              <th style="width:34%">Name</th>
-              <th style="width:22%" class="right">Expenses Paid</th>
-              <th style="width:22%" class="right">Balance</th>
-              <th class="hide-sm" style="width:22%">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-          <tfoot>
-            <tr>
-              <td class="right"><strong>Totals</strong></td>
-              <td class="right mono" id="totalPaid">0.00</td>
-              <td class="right mono" id="totalBalance">0.00</td>
-              <td class="hide-sm"></td>
-            </tr>
-          </tfoot>
-        </table>
-        <div class="small muted" style="margin-top:8px">Rows adjust automatically when you change the traveller count. Balances update as you type.</div>
-      </div>
-    </section>
+    <main>
+      <section class="card">
+        <div class="controls">
+          <label for="travellers">Total travellers:</label>
+          <input id="travellers" type="number" min="1" step="1" value="3" inputmode="numeric" />
+          <span class="spacer"></span>
+          <span id="summary" class="summary-pill mono"></span>
+        </div>
 
-    <section class="card">
-      <h3 style="margin: 0 0 10px; color:#0b1f4e;">Who should pay whom</h3>
-      <div id="settlementsWrap">
         <div class="table-wrap">
-          <table id="settlementsTable" aria-label="Settlement transfers" style="display:none; min-width:420px;">
+          <table id="peopleTable" aria-label="People and expenses">
             <thead>
               <tr>
-                <th style="width:40%">From</th>
-                <th style="width:40%">To</th>
-                <th class="right" style="width:20%">Amount</th>
+                <th style="width:34%">Name</th>
+                <th style="width:22%" class="right">Expenses Paid</th>
+                <th style="width:22%" class="right">Balance</th>
+                <th class="hide-sm" style="width:22%">Actions</th>
               </tr>
             </thead>
-            <tbody id="settlementsBody"></tbody>
+            <tbody id="tbody"></tbody>
             <tfoot>
               <tr>
-                <td colspan="3" class="right mono" id="settlementCheck"></td>
+                <td class="right"><strong>Totals</strong></td>
+                <td class="right mono" id="totalPaid">0.00</td>
+                <td class="right mono" id="totalBalance">0.00</td>
+                <td class="hide-sm"></td>
               </tr>
             </tfoot>
           </table>
+          <div class="small muted" style="margin-top:8px">Rows adjust automatically when you change the traveller count. Balances update as you type.</div>
         </div>
-        <div id="noSettlements" class="muted">No settlements yet. Start entering amounts.</div>
-      </div>
-    </section>
-  </main>
+      </section>
+
+      <section class="card">
+        <h3 style="margin: 0 0 10px; color:#0b1f4e;">Who should pay whom</h3>
+        <div id="settlementsWrap">
+          <div class="table-wrap">
+            <table id="settlementsTable" aria-label="Settlement transfers" style="display:none; min-width:420px;">
+              <thead>
+                <tr>
+                  <th style="width:40%">From</th>
+                  <th style="width:40%">To</th>
+                  <th class="right" style="width:20%">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="settlementsBody"></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="right mono" id="settlementCheck"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div id="noSettlements" class="muted">No settlements yet. Start entering amounts.</div>
+        </div>
+      </section>
+    </main>
+  </div>
 
 <script>
-  // --- Utilities
+  /* ===== Logic (unchanged except auto-calc hooks) ===== */
   const fmt = (n) => (isNaN(n) ? "0.00" : Number(n).toFixed(2));
   const money = (n) => fmt(n);
 
-  // --- DOM elements
   const tbody = document.getElementById('tbody');
   const totalPaidEl = document.getElementById('totalPaid');
   const totalBalanceEl = document.getElementById('totalBalance');
@@ -184,7 +221,6 @@
   const summary = document.getElementById('summary');
   const travellersInput = document.getElementById('travellers');
 
-  // --- Row management
   function addRow(name = "", paid = "") {
     const tr = document.createElement('tr');
 
@@ -194,6 +230,7 @@
     nameInput.placeholder = 'Name';
     nameInput.value = name;
     nameInput.autocomplete = 'name';
+    nameInput.addEventListener('input', () => { /* names don't affect math */ });
     tdName.appendChild(nameInput);
 
     const tdPaid = document.createElement('td');
@@ -241,7 +278,6 @@
     recalcLive();
   }
 
-  // --- Calculations
   function getData() {
     const rows = Array.from(tbody.querySelectorAll('tr'));
     return rows.map((tr, idx) => {
@@ -261,7 +297,7 @@
 
     people.forEach((p, i) => {
       const row = tbody.children[i];
-      const balCell = row.children[2]; // Balance column position
+      const balCell = row.children[2]; // Balance column (between Paid and Actions)
       balCell.textContent = money(p.balance);
       balCell.classList.toggle('pos', p.balance > 0);
       balCell.classList.toggle('neg', p.balance < 0);
@@ -316,13 +352,70 @@
 
   function recalcLive() { recalc(); }
 
-  // Traveller count → rows + recalc
   travellersInput.addEventListener('input', () => setRowCount(travellersInput.value), { passive: true });
   travellersInput.addEventListener('change', () => setRowCount(travellersInput.value));
 
   // Init
   setRowCount(travellersInput.value || 3);
   recalc();
+
+  /* ===== Animated Starfield (Canvas) =====
+     Lightweight, battery-friendly. Two layers for parallax. */
+  (function(){
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); // cap DPR to keep it efficient
+
+    function makeLayer(canvas, count, speedMin, speedMax, sizeMin, sizeMax, alphaMin, alphaMax){
+      const ctx = canvas.getContext('2d');
+      const stars = [];
+      function rand(a,b){ return a + Math.random()*(b-a); }
+
+      function resize(){
+        const {innerWidth:w, innerHeight:h} = window;
+        canvas.width = w * DPR;
+        canvas.height = h * DPR;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        stars.length = 0;
+        for (let i=0;i<count;i++){
+          stars.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            r: rand(sizeMin, sizeMax)*DPR,
+            a: rand(alphaMin, alphaMax),
+            v: rand(speedMin, speedMax)*DPR,
+            tw: rand(0.002, 0.006) * (Math.random()<0.5?-1:1),
+            ta: rand(alphaMin, alphaMax)
+          });
+        }
+      }
+
+      function step(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        for (const s of stars){
+          s.y += s.v;
+          if (s.y - s.r > canvas.height) s.y = -s.r;
+          // subtle twinkle
+          s.a += s.tw;
+          if (s.a > alphaMax || s.a < alphaMin) s.tw *= -1;
+          ctx.globalAlpha = Math.max(alphaMin, Math.min(alphaMax, s.a));
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+        requestAnimationFrame(step);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      step();
+    }
+
+    makeLayer(document.getElementById('starsBack'), 120, 0.05, 0.12, 0.35, 0.8, 0.15, 0.35); // slower, smaller
+    makeLayer(document.getElementById('starsFront'), 60, 0.10, 0.25, 0.6, 1.2, 0.25, 0.55);  // faster, brighter
+  })();
 </script>
 </body>
 </html>
